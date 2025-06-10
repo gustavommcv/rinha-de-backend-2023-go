@@ -8,14 +8,23 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 var greeting string
 
 func main() {
-	connString := fmt.Sprintf("user=postgres password=password host=localhost port=5432 dbname=rinhadb")
+	godotenv.Load()
 
-	conn, err := pgx.Connect(context.Background(), connString) 
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
+	connString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	conn, err := pgx.Connect(context.Background(), connString)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
