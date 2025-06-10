@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -24,15 +24,16 @@ func main() {
 
 	connString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
-	conn, err := pgx.Connect(context.Background(), connString)
+	dbpool, err := pgxpool.New(context.Background(), connString)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer conn.Close(context.Background())
+	defer dbpool.Close()
 
-	err = conn.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
+	query := "SELECT 'Hello, World!'"
+	err = dbpool.QueryRow(context.Background(), query).Scan(&greeting)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
