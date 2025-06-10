@@ -2,7 +2,7 @@ CREATE DATABASE rinhadb;
 
 \c rinhadb
 
-CREATE TABLE IF NOT EXISTS persons (
+CREATE TABLE IF NOT EXISTS people (
   person_id uuid DEFAULT gen_random_uuid(), 
   -- obrigatório, string de até 100 caracteres.
   name VARCHAR(100) NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS languages (
 
 -- opcional, vetor de string
 CREATE TABLE IF NOT EXISTS stack (
-  person_id uuid references persons(person_id),
+  person_id uuid references people(person_id),
   language_id uuid references languages(language_id),
 
   PRIMARY KEY (person_id, language_id)

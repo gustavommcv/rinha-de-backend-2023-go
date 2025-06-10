@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/database"
+	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/repositories"
 	"github.com/joho/godotenv"
 )
 
@@ -32,6 +33,8 @@ func main() {
 	}
 	defer pool.Close()
 
+	personRepository := repositories.NewUserRepository(pool)
+
 	query := "SELECT 'Hello, World!'"
 	err = pool.QueryRow(ctx, query).Scan(&greeting)
 
@@ -41,7 +44,22 @@ func main() {
 	}
 
 	http.HandleFunc("/hello", helloHandler)
+	http.HandleFunc("/contagem-pessoas", func(w http.ResponseWriter, r *http.Request) {
+		countHandler(w, r, personRepository)
+	})
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func countHandler(w http.ResponseWriter, _ *http.Request, repository *repositories.PersonRepository) {
+	count, err := repository.GetPeopleCount(context.Background())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error counting users: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(269)
+	fmt.Fprintf(w, "%d", count)
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
