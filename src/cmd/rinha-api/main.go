@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/database"
 	"github.com/joho/godotenv"
 )
 
@@ -15,28 +15,28 @@ var greeting string
 
 func main() {
 	godotenv.Load()
+	ctx := context.Background()
 
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbName := os.Getenv("DB_NAME")
+	config := database.Config{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		DbName:   os.Getenv("DB_NAME"),
+	}
 
-	connString := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s", dbUser, dbPassword, dbHost, dbPort, dbName)
-
-	dbpool, err := pgxpool.New(context.Background(), connString)
-
+	pool, err := database.NewPool(ctx, config)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to create postgres pool: %v", err)
 		os.Exit(1)
 	}
-	defer dbpool.Close()
+	defer pool.Close()
 
 	query := "SELECT 'Hello, World!'"
-	err = dbpool.QueryRow(context.Background(), query).Scan(&greeting)
+	err = pool.QueryRow(ctx, query).Scan(&greeting)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "query row failed: %v\n", err)
 		os.Exit(1)
 	}
 
