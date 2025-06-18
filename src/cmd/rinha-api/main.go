@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/database"
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/repositories"
@@ -27,27 +28,19 @@ func main() {
 	}
 
 	pool, err := database.NewPool(ctx, config)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create postgres pool: %v", err)
-		os.Exit(1)
-	}
+	checkError(err, "failed to create postgres pool")
 	defer pool.Close()
 
 	personRepository := repositories.NewUserRepository(pool)
 
-	query := "SELECT 'Hello, World!'"
-	err = pool.QueryRow(ctx, query).Scan(&greeting)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "query row failed: %v\n", err)
-		os.Exit(1)
-	}
-
-	http.HandleFunc("/hello", helloHandler)
-	http.HandleFunc("/contagem-pessoas", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /contagem-pessoas", func(w http.ResponseWriter, r *http.Request) {
 		countHandler(w, r, personRepository)
 	})
+	http.HandleFunc("POST /pessoas", createPersonHandler)
+	http.HandleFunc("GET /pessoas/{id}", getPersonHandler)
+	http.HandleFunc("GET /pessoas", getPeopleHandler)
 
+	fmt.Println("Running at 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -62,6 +55,30 @@ func countHandler(w http.ResponseWriter, _ *http.Request, repository *repositori
 	fmt.Fprintf(w, "%d", count)
 }
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "%s", greeting)
+func createPersonHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Creating person...")
+}
+
+func getPersonHandler(w http.ResponseWriter, r *http.Request) {
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) < 3 {
+		http.Error(w, "ID not supplied", http.StatusBadRequest)
+		return
+	}
+	id := pathParts[2]
+
+	fmt.Fprintf(w, "Get person id: %v", id)
+}
+
+func getPeopleHandler(w http.ResponseWriter, r *http.Request) {
+	term := r.URL.Query().Get("t")
+
+	fmt.Fprintf(w, "Termo de busca: %s", term)
+}
+
+func checkError(err error, message string) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: error: %v\n", message, err)
+		os.Exit(1)
+	}
 }
