@@ -2,12 +2,22 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/repositories"
 )
+
+type PersonRequestDTO struct {
+	Surname   string    `json:"apelido"`
+	Name      string    `json:"nome"`
+	Birthdate time.Time `json:"nascimento"`
+}
+
+const PersonRequest = "person-request"
 
 type PeopleHandler struct {
 	repository repositories.PersonRepository
@@ -30,8 +40,20 @@ func (p *PeopleHandler) Count(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintf(w, "%d", count)
 }
 
-func (p *PeopleHandler) Create(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprintf(w, "Creating person...")
+func (p *PeopleHandler) Create(w http.ResponseWriter, r *http.Request) {
+	var personRequest PersonRequestDTO
+
+	// TODO
+	// MARSHAL
+	err := json.NewDecoder(r.Body).Decode(&personRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	ctx := context.WithValue(r.Context(), PersonRequest, personRequest)
+	r.WithContext(ctx)
+
+	fmt.Fprintf(w, "Creating person...\n%s", personRequest.Surname)
 }
 
 func (p *PeopleHandler) FindById(w http.ResponseWriter, r *http.Request) {
