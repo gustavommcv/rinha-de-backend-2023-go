@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS people (
 -- com cada elemento sendo obrigatório e de até 32 caracteres.
 CREATE TABLE IF NOT EXISTS languages (
   language_id uuid DEFAULT gen_random_uuid(),
-  name VARCHAR(32) UNIQUE,
+  name VARCHAR(32) UNIQUE NOT NULL,
 
   PRIMARY KEY (language_id)
 );
@@ -29,4 +29,3 @@ CREATE TABLE IF NOT EXISTS stack (
 
   PRIMARY KEY (person_id, language_id)
 );
-

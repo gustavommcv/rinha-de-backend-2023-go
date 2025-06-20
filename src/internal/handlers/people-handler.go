@@ -87,12 +87,10 @@ func (p *PeopleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	personResponse, err := p.repository.CreatePerson(context.Background(), personRequest)
 	if err != nil {
-		http.Error(w, "Error creating user", http.StatusUnprocessableEntity)
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	// TODO
-	// Id criado pelo banco no header
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", personResponse.Id))
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Creating person...\n%s", personRequest)
