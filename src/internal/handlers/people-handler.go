@@ -93,7 +93,7 @@ func (p *PeopleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", fmt.Sprintf("/pessoas/%s", personResponse.Id))
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "Creating person...\n%s", personRequest)
+	fmt.Fprintf(w, "Creating person...\n%s", *personResponse)
 }
 
 func (p *PeopleHandler) FindById(w http.ResponseWriter, r *http.Request) {

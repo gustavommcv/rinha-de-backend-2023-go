@@ -7,6 +7,7 @@ import (
 
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/database"
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/entities"
+	uuid "github.com/jackc/pgtype/ext/gofrs-uuid"
 )
 
 type Person struct {
@@ -33,28 +34,51 @@ func (p *PersonRepository) GetPeopleCount(ctx context.Context) (int, error) {
 }
 
 func (p *PersonRepository) CreatePerson(ctx context.Context, personRequest entities.PersonRequestDTO) (*entities.PersonResponseDTO, error) {
+	// Insert person
+	var personID uuid.UUID
+	err := p.pool.QueryRow(
+		ctx, `
+			INSERT INTO people (surname, name, birthdate) 
+			VALUES ($1, $2, $3) 
+			RETURNING person_id`,
+		personRequest.Surname, personRequest.Name, personRequest.Birthdate).Scan(&personID)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert person: %w", err)
+	}
+
 	// Insert languages
 	for _, language := range personRequest.Stack {
-		_, err := p.pool.Exec(ctx, "INSERT INTO languages (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", language)
+		var languageID uuid.UUID
+		err := p.pool.QueryRow(
+			ctx, `
+				INSERT INTO languages (name)
+				VALUES ($1) 
+				ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+				RETURNING language_id`,
+			language).Scan(&languageID)
+
 		if err != nil {
-			return nil, fmt.Errorf("Insert language %s failed: %w", language, err)
+			return nil, fmt.Errorf("failed to get/insert language %s: %w", language, err)
+		}
+
+		// Insert stack
+		_, err = p.pool.Exec(
+			ctx, `
+				INSERT INTO stack (person_id, language_id)
+				VALUES ($1, $2)
+				ON CONFLICT (person_id, language_id) DO NOTHING`,
+			personID,
+			languageID,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed insert stack %s: %w", language, err)
 		}
 	}
 
-	// Insert person
-	_, err := p.pool.Exec(ctx, "INSERT INTO people (surname, name, birthdate) VALUES ($1, $2, $3)", personRequest.Surname, personRequest.Name, personRequest.Birthdate)
-
-	if err != nil {
-		return nil, fmt.Errorf("3- query row failed: %v", err)
-	}
-
-	// TODO
-	// Insert stack
-
-	// TODO
-	// Return person response
 	return &entities.PersonResponseDTO{
-		Id:        "fef06178-3685-4e9d-bcc1-4c04ad8132fb",
+		Id:        personID.UUID.String(),
 		Surname:   personRequest.Surname,
 		Name:      personRequest.Name,
 		Birthdate: personRequest.Birthdate,
