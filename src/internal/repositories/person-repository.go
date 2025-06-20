@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/database"
+	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/entities"
 )
 
 type Person struct {
@@ -31,7 +32,12 @@ func (p *PersonRepository) GetPeopleCount(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-func (c *PersonRepository) CreatePerson(ctx context.Context) {
-	// d := time.Date(2000, 2, 1, 12, 30, 0, 0, time.UTC)
-	// year, month, day := d.Date()
+func (c *PersonRepository) CreatePerson(ctx context.Context, personRequest entities.PersonRequestDTO) (entities.PersonResponseDTO, error) {
+	return entities.PersonResponseDTO{
+		Id:        "fef06178-3685-4e9d-bcc1-4c04ad8132fb",
+		Surname:   personRequest.Surname,
+		Name:      personRequest.Name,
+		Birthdate: personRequest.Birthdate,
+		Stack:     personRequest.Stack,
+	}, nil
 }

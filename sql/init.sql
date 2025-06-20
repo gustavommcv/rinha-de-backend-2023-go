@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS people (
   -- obrigatório, string de até 100 caracteres.
   name VARCHAR(100) NOT NULL,
   -- obrigatório, único, string de até 32 caracteres.
-  surname VARCHAR(32) NOT NULL,
+  surname VARCHAR(32) UNIQUE NOT NULL,
   -- obrigatório, string para data no formato AAAA-MM-DD (ano, mês, dia).
   birthdate DATE NOT NULL,
 
