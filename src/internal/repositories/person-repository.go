@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/database"
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/entities"
-	uuid "github.com/jackc/pgtype/ext/gofrs-uuid"
 )
 
 type Person struct {
@@ -78,10 +78,51 @@ func (p *PersonRepository) CreatePerson(ctx context.Context, personRequest entit
 	}
 
 	return &entities.PersonResponseDTO{
-		Id:        personID.UUID.String(),
+		Id:        personID.String(),
 		Surname:   personRequest.Surname,
 		Name:      personRequest.Name,
 		Birthdate: personRequest.Birthdate,
 		Stack:     personRequest.Stack,
+	}, nil
+}
+
+func (p *PersonRepository) FindById(ctx context.Context, id uuid.UUID) (*entities.PersonResponseDTO, error) {
+	rows, err := p.pool.Query(
+		ctx, `
+			SELECT people.*, languages.name AS language_name FROM PEOPLE 
+			LEFT JOIN stack ON people.person_id = stack.person_id
+			LEFT JOIN languages ON stack.language_id = languages.language_id
+			WHERE people.person_id = $1 
+		`, id)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, fmt.Errorf("query row failed: %w", err)
+	}
+	defer rows.Close()
+
+	type person_row struct {
+		person_id string
+		name      string
+		surname   string
+		birthdate time.Time
+		languages []string
+	}
+
+	pr := person_row{}
+	for rows.Next() {
+		var l string
+		rows.Scan(&pr.person_id, &pr.name, &pr.surname, &pr.birthdate, &l)
+		if l != "" {
+			pr.languages = append(pr.languages, l)
+		}
+	}
+
+	return &entities.PersonResponseDTO{
+		Id:        pr.person_id,
+		Surname:   pr.surname,
+		Name:      pr.name,
+		Birthdate: pr.birthdate.Format("2006-01-02"),
+		Stack:     pr.languages,
 	}, nil
 }

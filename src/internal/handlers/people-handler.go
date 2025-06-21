@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/entities"
 	"github.com/gustavommcv/rinha-de-backend-2023-go/src/internal/repositories"
 )
@@ -104,7 +105,31 @@ func (p *PeopleHandler) FindById(w http.ResponseWriter, r *http.Request) {
 	}
 	id := pathParts[2]
 
-	fmt.Fprintf(w, "Get person id: %v", id)
+	if err := uuid.Validate(id); err != nil {
+		http.Error(w, "Invalid UUID", http.StatusBadRequest)
+		return
+	}
+
+	response, err := p.repository.FindById(context.Background(), uuid.MustParse(id))
+	if err != nil {
+		http.Error(w, "Get id error", http.StatusBadRequest)
+		return
+	}
+
+	if response.Id == "" {
+		http.Error(w, "Person not found", http.StatusNotFound)
+		return
+	}
+
+	user, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%v", string(user))
 }
 
 func (p *PeopleHandler) Search(w http.ResponseWriter, r *http.Request) {
