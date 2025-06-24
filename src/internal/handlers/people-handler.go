@@ -134,6 +134,11 @@ func (p *PeopleHandler) FindById(w http.ResponseWriter, r *http.Request) {
 func (p *PeopleHandler) Search(w http.ResponseWriter, r *http.Request) {
 	searchTerm := r.URL.Query().Get("t")
 
+	if searchTerm == "" {
+		http.Error(w, "Term not provided", http.StatusBadRequest)
+		return
+	}
+
 	response, err := p.repository.Search(context.Background(), searchTerm)
 	if err != nil {
 		http.Error(w, "Search error", http.StatusBadRequest)
