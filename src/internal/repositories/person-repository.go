@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -125,4 +126,56 @@ func (p *PersonRepository) FindById(ctx context.Context, id uuid.UUID) (*entitie
 		Birthdate: pr.birthdate.Format("2006-01-02"),
 		Stack:     pr.languages,
 	}, nil
+}
+
+func (p *PersonRepository) Search(ctx context.Context, searchTerm string) ([]entities.PersonResponseDTO, error) {
+	var sb strings.Builder
+
+	sb.WriteString("%")
+	sb.WriteString(searchTerm)
+	sb.WriteString("%")
+
+	rows, err := p.pool.Query(
+		ctx, `
+		SELECT p.person_id FROM people p
+LEFT JOIN stack s ON p.person_id = s.person_id
+LEFT JOIN languages l ON l.language_id = s.language_id
+WHERE LOWER(p.name) LIKE LOWER($1)
+OR LOWER(p.surname) LIKE LOWER($1)
+OR LOWER(l.name) LIKE LOWER($1)
+LIMIT 50;
+		`, sb.String())
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, fmt.Errorf("query row failed: %w", err)
+	}
+	defer rows.Close()
+
+	type person_row struct {
+		person_id string
+		name      string
+		surname   string
+		birthdate time.Time
+		languages []string
+	}
+
+	people := []entities.PersonResponseDTO{}
+	ids := []string{}
+	for rows.Next() {
+		var currentId string
+		rows.Scan(&currentId)
+		ids = append(ids, currentId)
+	}
+
+	for _, id := range ids {
+		person, err := p.FindById(ctx, uuid.MustParse(id))
+		if err != nil {
+			return nil, err
+		}
+
+		people = append(people, *person)
+	}
+
+	return people, nil
 }

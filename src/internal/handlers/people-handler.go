@@ -125,15 +125,27 @@ func (p *PeopleHandler) FindById(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
-
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, "%v", string(user))
 }
 
 func (p *PeopleHandler) Search(w http.ResponseWriter, r *http.Request) {
-	term := r.URL.Query().Get("t")
+	searchTerm := r.URL.Query().Get("t")
 
-	fmt.Fprintf(w, "Termo de busca: %s", term)
+	response, err := p.repository.Search(context.Background(), searchTerm)
+	if err != nil {
+		http.Error(w, "Search error", http.StatusBadRequest)
+		return
+	}
+
+	people, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%s", string(people))
 }
